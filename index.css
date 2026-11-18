@@ -1,0 +1,26 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { @apply bg-ink-50 text-ink-900 antialiased; }
+  h1, h2, h3 { @apply font-display tracking-tight; }
+  :focus-visible { @apply outline-2 outline-offset-2 outline-brand; outline-style: solid; }
+}
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50; }
+  .btn-primary { @apply btn bg-brand text-white hover:bg-brand-dark; }
+  .btn-dark { @apply btn bg-ink-900 text-white hover:bg-ink-800; }
+  .btn-ghost { @apply btn border border-ink-200 bg-white text-ink-900 hover:bg-ink-50; }
+  .btn-danger { @apply btn border border-brand/40 bg-white text-brand hover:bg-brand-soft; }
+  .input { @apply w-full rounded-lg border border-ink-200 bg-white px-3.5 py-2.5 text-sm placeholder:text-ink-400 focus:border-ink-600; }
+  .label { @apply mb-1.5 block text-sm font-medium text-ink-600; }
+  .panel { @apply rounded-xl border border-ink-100 bg-white p-5; }
+  .chip { @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold; }
+}
+/* Ticket stub: perforated notch edges are the one decorative element in the product. */
+.stub { position: relative; background: #fff; border: 1px solid #e4e9f2; border-radius: 14px; }
+.stub::before, .stub::after { content: ''; position: absolute; top: 62%; width: 18px; height: 18px; border-radius: 50%; background: #f1f4f9; border: 1px solid #e4e9f2; }
+.stub::before { left: -10px; clip-path: inset(0 0 0 50%); }
+.stub::after { right: -10px; clip-path: inset(0 50% 0 0); }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }

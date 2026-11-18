@@ -1,0 +1,31 @@
+# Requires the ingress-nginx controller. It plays the role NGINX plays in docker-compose.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: campusconnect
+  namespace: campusconnect
+  annotations:
+    nginx.ingress.kubernetes.io/affinity: cookie            # sticky sessions for Socket.IO
+    nginx.ingress.kubernetes.io/session-cookie-name: cc-route
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/limit-rps: "20"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: events.example.edu
+      http:
+        paths:
+          - { path: /api, pathType: Prefix, backend: { service: { name: backend, port: { number: 4000 } } } }
+          - { path: /socket.io, pathType: Prefix, backend: { service: { name: backend, port: { number: 4000 } } } }
+          - { path: /, pathType: Prefix, backend: { service: { name: frontend, port: { number: 80 } } } }
+---
+# qr-service accepts traffic ONLY from backend pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: qr-service-only-from-backend, namespace: campusconnect }
+spec:
+  podSelector: { matchLabels: { app: qr-service } }
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{ podSelector: { matchLabels: { app: backend } } }]
+      ports: [{ port: 8081 }]

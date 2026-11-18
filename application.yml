@@ -1,0 +1,11 @@
+server:
+  port: 8081
+spring:
+  datasource:
+    url: ${QR_DB_URL:jdbc:postgresql://localhost:5432/campusconnect}
+    username: ${POSTGRES_USER:campus}
+    password: ${POSTGRES_PASSWORD:campus}
+    hikari:
+      maximum-pool-size: 8
+internal:
+  api-key: ${INTERNAL_API_KEY}

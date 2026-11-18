@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: Namespace
+metadata: { name: campusconnect }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata: { name: cc-config, namespace: campusconnect }
+data:
+  REDIS_URL: redis://redis:6379
+  KAFKA_BROKERS: kafka:9092
+  QR_SERVICE_URL: http://qr-service:8081
+  QR_DB_URL: jdbc:postgresql://postgres:5432/campusconnect
+  SMTP_HOST: smtp-mail.outlook.com
+  SMTP_PORT: "587"
+  CORS_ORIGIN: https://events.example.edu
+  SEAT_HOLD_TTL_SEC: "300"
+---
+# TEMPLATE ONLY. Do not commit real values. Create the real one with:
+#   kubectl -n campusconnect create secret generic cc-secrets --from-env-file=.env.k8s
+# (or use Sealed Secrets / External Secrets in a real cluster)
+apiVersion: v1
+kind: Secret
+metadata: { name: cc-secrets, namespace: campusconnect }
+type: Opaque
+stringData:
+  POSTGRES_USER: campus
+  POSTGRES_PASSWORD: REPLACE_ME
+  DATABASE_URL: postgresql://campus:REPLACE_ME@postgres:5432/campusconnect?schema=public
+  JWT_ACCESS_SECRET: REPLACE_ME
+  TICKET_HMAC_SECRET: REPLACE_ME
+  OTP_PEPPER: REPLACE_ME
+  INTERNAL_API_KEY: REPLACE_ME
+  ADMIN_EMAILS: s24cseu1608@bennett.edu.in
+  SMTP_USER: REPLACE_ME
+  SMTP_PASS: REPLACE_ME
+  SMTP_FROM: REPLACE_ME

@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: backend, namespace: campusconnect }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: backend } }
+  strategy: { rollingUpdate: { maxUnavailable: 0, maxSurge: 1 } }
+  template:
+    metadata: { labels: { app: backend } }
+    spec:
+      containers:
+        - name: backend
+          image: ghcr.io/OWNER/campusconnect-backend:latest   # CI pushes this image
+          ports: [{ containerPort: 4000 }]
+          envFrom: [{ configMapRef: { name: cc-config } }, { secretRef: { name: cc-secrets } }]
+          env: [{ name: NODE_ENV, value: production }]
+          readinessProbe: { httpGet: { path: /api/health, port: 4000 }, initialDelaySeconds: 10, periodSeconds: 5 }
+          livenessProbe: { httpGet: { path: /api/health, port: 4000 }, initialDelaySeconds: 30, periodSeconds: 15 }
+          resources: { requests: { cpu: 100m, memory: 192Mi }, limits: { memory: 512Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: backend, namespace: campusconnect }
+spec: { selector: { app: backend }, ports: [{ port: 4000 }] }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: backend, namespace: campusconnect }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: backend }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics: [{ type: Resource, resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } } }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: qr-service, namespace: campusconnect }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: qr-service } }
+  template:
+    metadata: { labels: { app: qr-service } }
+    spec:
+      containers:
+        - name: qr-service
+          image: ghcr.io/OWNER/campusconnect-qr-service:latest
+          ports: [{ containerPort: 8081 }]
+          envFrom: [{ configMapRef: { name: cc-config } }]
+          env:
+            - { name: TZ, value: UTC }
+            - name: POSTGRES_USER
+              valueFrom: { secretKeyRef: { name: cc-secrets, key: POSTGRES_USER } }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: cc-secrets, key: POSTGRES_PASSWORD } }
+            - name: INTERNAL_API_KEY
+              valueFrom: { secretKeyRef: { name: cc-secrets, key: INTERNAL_API_KEY } }
+          readinessProbe: { httpGet: { path: /health, port: 8081 }, initialDelaySeconds: 20, periodSeconds: 5 }
+          resources: { requests: { cpu: 100m, memory: 256Mi }, limits: { memory: 512Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: qr-service, namespace: campusconnect }
+spec: { selector: { app: qr-service }, ports: [{ port: 8081 }] }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: notification-worker, namespace: campusconnect }
+spec:
+  replicas: 2          # same consumer group: Kafka splits partitions between them
+  selector: { matchLabels: { app: notification-worker } }
+  template:
+    metadata: { labels: { app: notification-worker } }
+    spec:
+      containers:
+        - name: worker
+          image: ghcr.io/OWNER/campusconnect-notification-worker:latest
+          envFrom: [{ configMapRef: { name: cc-config } }, { secretRef: { name: cc-secrets } }]
+          resources: { requests: { cpu: 50m, memory: 96Mi }, limits: { memory: 256Mi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: frontend, namespace: campusconnect }
+spec:
+  replicas: 2
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata: { labels: { app: frontend } }
+    spec:
+      containers:
+        - name: frontend
+          image: ghcr.io/OWNER/campusconnect-frontend:latest
+          ports: [{ containerPort: 80 }]
+          readinessProbe: { httpGet: { path: /, port: 80 }, periodSeconds: 5 }
+          resources: { requests: { cpu: 20m, memory: 32Mi }, limits: { memory: 128Mi } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: frontend, namespace: campusconnect }
+spec: { selector: { app: frontend }, ports: [{ port: 80 }] }
